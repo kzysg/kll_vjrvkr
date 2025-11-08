@@ -5,7 +5,7 @@ on:
     # UTC23〜UTC23:55 → JST8〜8:55
     - cron: '*/5 23 * * *'
     # UTC0〜UTC12:55 → JST9〜21:55
-    - cron: '*/5 0-12 * * *'
+    - cron: '*/5 0-15 * * *'
   workflow_dispatch:  # 手動実行も可能
 
 jobs:
