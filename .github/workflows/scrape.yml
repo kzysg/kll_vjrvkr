@@ -47,4 +47,4 @@ jobs:
       run: echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> $GITHUB_ENV
 
     - name: Run scraper
-      run: python main_scrape.py
+      run: python main_scrape2.py
