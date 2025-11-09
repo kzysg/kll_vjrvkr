@@ -147,7 +147,8 @@ with open("result_name_madori.txt", "w", encoding="utf-8") as f:
     f.write(result_text)
 
 print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
-print(result_text)
+
+
 # -----------------------------------------------------
 # 変更検知のためのハッシュ計算（データ部のみ！）
 # -----------------------------------------------------
