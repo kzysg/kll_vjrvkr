@@ -137,7 +137,7 @@ result_text = ""
 result_text += f"取得日時: {now}\n"
 result_text += f"空き住戸数: {len(results)}件\n\n"
 result_text += "住宅名 | 市区町村 | 間取り | 家賃\n"
-result_text += "-" * 60 + "\n"
+result_text += "-" * 20 + "\n"
 for r in results:
     result_text += f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n"
 
@@ -149,7 +149,27 @@ print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。"
 # -----------------------------------------------------
 # 変更検知のためのハッシュ計算
 # -----------------------------------------------------
-hash_val = hashlib.sha256(result_text.encode("utf-8")).hexdigest()
+#hash_val = hashlib.sha256(result_text.encode("utf-8")).hexdigest()
+#
+#last_hash = None
+#if os.path.exists(HASH_FILE):
+#    with open(HASH_FILE, "r") as f:
+#        last_hash = f.read().strip()
+#
+#is_changed = (hash_val != last_hash)
+#if is_changed:
+#    print("🆕 検索結果に変更があります（Discord通知を実行）")
+#else:
+#    print("⏸️ 検索結果に変更はありません（Discord通知をスキップ）")
+
+# -----------------------------------------------------
+# 変更検知のためのハッシュ計算（ヘッダーを除外し、データ部分のみで計算）
+# -----------------------------------------------------
+lines = result_text.splitlines(keepends=True)
+# データ部分は、4行目以降（行番号3以降、0始まり）とする
+data_part = "".join(lines[4:])  # ["住宅名 ...", "----", "A|B|C|D\n", ...] 4行目以降を抽出
+
+hash_val = hashlib.sha256(data_part.encode("utf-8")).hexdigest()
 
 last_hash = None
 if os.path.exists(HASH_FILE):
