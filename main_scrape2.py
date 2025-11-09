@@ -2,6 +2,8 @@ import time
 import datetime
 import re
 import hashlib
+import os
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -164,8 +166,8 @@ else:
 # Discord通知（差分があった場合のみ）
 # -----------------------------------------------------
 if is_changed:
-    import os
-    import requests
+#    import os
+#    import requests
 
     DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
     try:
