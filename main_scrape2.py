@@ -4,6 +4,8 @@ import re
 import hashlib
 import os
 import requests
+import json
+import hashlib
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -147,25 +149,14 @@ with open("result_name_madori.txt", "w", encoding="utf-8") as f:
 print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
 
 # -----------------------------------------------------
-# 変更検知のためのハッシュ計算（データ部のみ抜粋してから計算）
+# 変更検知のためのハッシュ計算（データ部のみ！）
 # -----------------------------------------------------
-lines = result_text.splitlines()
-start_idx = None
-for i, line in enumerate(lines):
-    if re.match(r'-{5,}', line):  # 区切線（例：----...）を検出
-        start_idx = i + 1
-        break
-
-if start_idx is not None:
-    data_part = "\n".join(lines[start_idx:])  # 区切線の次の行から末尾までが実データ
-else:
-    data_part = ""  # 念のため（ファイル形式変わったときの保険）
-
-hash_val = hashlib.sha256(data_part.encode("utf-8")).hexdigest()
+data_for_hash = json.dumps(results, ensure_ascii=False, sort_keys=True)
+hash_val = hashlib.sha256(data_for_hash.encode("utf-8")).hexdigest()
 
 last_hash = None
 if os.path.exists(HASH_FILE):
-    with open(HASH_FILE, "r") as f:
+    with open(HASH_FILE, "r", encoding="utf-8") as f:
         last_hash = f.read().strip()
 
 is_changed = (hash_val != last_hash)
@@ -174,13 +165,10 @@ if is_changed:
 else:
     print("⏸️ 検索結果に変更はありません（Discord通知をスキップ）")
 
-
 # -----------------------------------------------------
 # Discord通知（差分があった場合のみ）
 # -----------------------------------------------------
 if is_changed:
-#    import os
-#    import requests
 
     DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
     try:
