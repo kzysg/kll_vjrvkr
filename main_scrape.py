@@ -179,7 +179,7 @@ try:
         requests.post(DISCORD_WEBHOOK_URL, json=data)
 
     print("✅ Discord通知を送信しました。")
- except Exception as e:
+except Exception as e:
     print("⚠️ Discord通知に失敗しました:", e)   
 
 
