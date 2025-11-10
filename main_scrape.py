@@ -140,7 +140,7 @@ with open("result_name_madori.txt", "w", encoding="utf-8") as f:
         f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
 
 print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
-print(results)  # 先頭1000文字だけ出力
+
 
 
 
@@ -173,6 +173,18 @@ try:
         requests.post(DISCORD_WEBHOOK_URL, json=data)
 
     print("✅ Discord通知を送信しました。")
+ except Exception as e:
+    print("⚠️ Discord通知に失敗しました:", e)   
 
-except Exception as e:
-    print("⚠️ Discord通知に失敗しました:", e)
+# ✅ 4行目以降だけログに表示
+lines = content.splitlines()
+if len(lines) > 3:
+    print("📄 result_name_madori.txt の 4行目以降:")
+    print("-" * 60)
+    print("\n".join(lines[3:]))  # 4行目以降を結合して表示
+    print("-" * 60)
+else:
+    print("⚠️ ファイルに4行目以降がありません。")
+
+
+
