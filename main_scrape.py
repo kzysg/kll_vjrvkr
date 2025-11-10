@@ -161,7 +161,7 @@ DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 try:
     with open("result_name_madori.txt", "r", encoding="utf-8") as f:
         content = f.read()
-    　　 # ✅ 4行目以降だけログに表示
+    # ✅ 4行目以降だけログに表示
     lines = content.splitlines()
     if len(lines) > 3:
         print("\n".join(lines[3:]))  # 4行目以降を結合して表示
