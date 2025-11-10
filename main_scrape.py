@@ -140,6 +140,7 @@ with open("result_name_madori.txt", "w", encoding="utf-8") as f:
         f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
 
 print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
+print(content[:1000])  # 先頭1000文字だけ出力
 
 
 
