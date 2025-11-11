@@ -3,6 +3,7 @@ import datetime
 import re
 import os
 import requests
+import difflib
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -152,51 +153,133 @@ print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。"
 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 print(f"🏠 実行時刻: {now}")
 
+# --- 先頭は既存のスクレイピング処理（省略） ---
+# （あなたの既存コードのまま result_name_madori.txt が出力される前提）
+
+
 
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 
 def send_discord_message(content: str):
-    """Discordに通知を送る"""
     if not DISCORD_WEBHOOK_URL:
         print("⚠️ DISCORD_WEBHOOK_URL が設定されていません。")
         return
-    data = {
-        "content": f"📢 **空室情報更新**\n```{content}```",
-        "username": "jkkchecker"
-    }
-    requests.post(DISCORD_WEBHOOK_URL, json=data)
+    data = {"content": f"📢 **空室情報更新**\n```{content}```", "username": "jkkchecker"}
+    try:
+        r = requests.post(DISCORD_WEBHOOK_URL, json=data, timeout=10)
+        print(f"📤 Discord POST -> status: {r.status_code}")
+    except Exception as e:
+        print("⚠️ Discord送信で例外:", e)
 
-def get_main_content(file_path: str) -> str:
-    """比較用：4行目以降のみ取得"""
-    with open(file_path, "r", encoding="utf-8") as f:
+def read_file_normalized(path: str) -> str:
+    """ファイルを読み、行ごとに正規化して返す（比較用）"""
+    with open(path, "r", encoding="utf-8") as f:
         lines = f.read().splitlines()
-    return "\n".join(lines[3:]) if len(lines) > 3 else ""
+    # 正規化ルール（必要に応じて調整）
+    norm_lines = []
+    for ln in lines:
+        # 全角スペースを半角に、先頭/末尾の空白削除、連続スペースを単一に
+        ln2 = ln.replace("\u3000", " ").strip()
+        ln2 = re.sub(r"\s+", " ", ln2)
+        norm_lines.append(ln2)
+    return "\n".join(norm_lines)
 
-def get_full_content(file_path: str) -> str:
-    """通知用：ファイル全体を取得"""
-    with open(file_path, "r", encoding="utf-8") as f:
+def read_full(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
         return f.read()
+
+# 比較対象
+prev_file = "previous_result/result_name_madori.txt"
+curr_file = "result_name_madori.txt"
+
+print("🔎 比較処理開始")
+print(f"-> 現在ファイル: {curr_file} (exists={os.path.exists(curr_file)})")
+print(f"-> 前回ファイル: {prev_file} (exists={os.path.exists(prev_file)})")
+
+if not os.path.exists(curr_file):
+    print("❌ 現在の result_name_madori.txt が見つかりません。処理を中止します。")
+else:
+    # current の 4行目以降（比較用）を正規化して取得
+    with open(curr_file, "r", encoding="utf-8") as f:
+        curr_lines = f.read().splitlines()
+    curr_main = curr_lines[3:] if len(curr_lines) > 3 else []
+    # 正規化（行ごと）
+    curr_main_norm = [re.sub(r"\s+", " ", ln.replace("\u3000", " ").strip()) for ln in curr_main]
+
+    if not os.path.exists(prev_file):
+        print("📁 前回データなし（previous_result が見つかりません）。初回通知を行います。")
+        # 通知はファイル全体（1行目から）
+        full = read_full(curr_file)
+        send_discord_message(full[:1900])
+    else:
+        # 前回ファイルの 4行目以降を読み、正規化
+        with open(prev_file, "r", encoding="utf-8") as f:
+            prev_lines = f.read().splitlines()
+        prev_main = prev_lines[3:] if len(prev_lines) > 3 else []
+        prev_main_norm = [re.sub(r"\s+", " ", ln.replace("\u3000", " ").strip()) for ln in prev_main]
+
+        # 比較（行単位で差分を取得）
+        diff = list(difflib.unified_diff(prev_main_norm, curr_main_norm, lineterm=""))
+        if not diff:
+            print("✅ 前回と同一（正規化後）。Discord通知は行いません。")
+        else:
+            print("🔔 差分あり。差分の行数:", len(diff))
+            # ログにdiffを全部出す（長ければ途中省略されますがGitHub上で見えます）
+            print("\n".join(diff))
+            # Discordには「ファイル全体」を送信（1行目から）
+            full = read_full(curr_file)
+            send_discord_message(full[:1900])
+
+# 終了時、デバッグ用に previous_result ディレクトリの中を表示（Workflowログ確認用）
+if os.path.isdir("previous_result"):
+    print("📂 previous_result の中身:", os.listdir("previous_result"))
+else:
+    print("📂 previous_result ディレクトリは存在しません。")
+
+#DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
+#
+#def send_discord_message(content: str):
+#    """Discordに通知を送る"""
+#    if not DISCORD_WEBHOOK_URL:
+#        print("⚠️ DISCORD_WEBHOOK_URL が設定されていません。")
+#        return
+#    data = {
+#        "content": f"📢 **空室情報更新**\n```{content}```",
+#        "username": "jkkchecker"
+#    }
+#    requests.post(DISCORD_WEBHOOK_URL, json=data)
+
+#def get_main_content(file_path: str) -> str:
+#    """比較用：4行目以降のみ取得"""
+#    with open(file_path, "r", encoding="utf-8") as f:
+#        lines = f.read().splitlines()
+#    return "\n".join(lines[3:]) if len(lines) > 3 else ""
+#
+#def get_full_content(file_path: str) -> str:
+#    """通知用：ファイル全体を取得"""
+#    with open(file_path, "r", encoding="utf-8") as f:
+#        return f.read()
 
 # -----------------------------------------------------
 # 差分比較と通知
 # -----------------------------------------------------
-prev_file = "previous_result/result_name_madori.txt"
-curr_file = "result_name_madori.txt"
-
-if os.path.exists(prev_file):
-    prev_content = get_main_content(prev_file)
-    curr_content = get_main_content(curr_file)
-    if prev_content.strip() != curr_content.strip():
-        print("🔔 内容が更新されています。Discordに通知します。")
-        full = get_full_content(curr_file)
-        send_discord_message(full[:1900])  # Discord制限(2000字弱)
-    else:
-        print("✅ 内容に変更なし。通知しません。")
-else:
-    print("📁 前回データなし。初回として通知します。")
-    full = get_full_content(curr_file)
-    send_discord_message(full[:1900])
-
+#prev_file = "previous_result/result_name_madori.txt"
+#curr_file = "result_name_madori.txt"
+#
+#if os.path.exists(prev_file):
+#    prev_content = get_main_content(prev_file)
+#    curr_content = get_main_content(curr_file)
+#    if prev_content.strip() != curr_content.strip():
+#        print("🔔 内容が更新されています。Discordに通知します。")
+#        full = get_full_content(curr_file)
+#        send_discord_message(full[:1900])  # Discord制限(2000字弱)
+#    else:
+#        print("✅ 内容に変更なし。通知しません。")
+#else:
+#    print("📁 前回データなし。初回として通知します。")
+#    full = get_full_content(curr_file)
+#    send_discord_message(full[:1900])
+#
 # -----------------------------------------------------
 # Discord通知
 # -----------------------------------------------------
