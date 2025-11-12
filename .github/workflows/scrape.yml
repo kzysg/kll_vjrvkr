@@ -55,6 +55,13 @@ jobs:
         path: previous_result.txt
         key: previous-result
         
+    - name: Show cached previous result
+      if: steps.cache-prev.outputs.cache-hit == 'true'
+      run: |
+        echo "📂 Cached previous_result.txt contents:"
+        cat previous_result.txt || echo "⚠️ previous_result.txt not found"
+
+        
     - name: Run scraper
       run: python main_scrape4.py
       
