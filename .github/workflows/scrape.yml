@@ -15,14 +15,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    
-    - name: Download previous result artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: previous-result
-        path: previous_result
-      continue-on-error: true   # エラーでも続行
-    
+      
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -54,18 +47,23 @@ jobs:
     - name: Set Discord Webhook
       run: echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> $GITHUB_ENV
 
+    # キャッシュ前回結果を取得
+    - name: Restore previous result
+      uses: actions/cache@v3
+      id: cache-prev
+      with:
+        path: previous_result.txt
+        key: previous-result
+        
     - name: Run scraper
       run: python main_scrape4.py
       
-    - name: Create previous_result directory
-      run: mkdir -p previous_result
-
-    - name: Save current result for next comparison
-      run: cp result_name_madori.txt previous_result/
-    
-    - name: Upload result as artifact
-      uses: actions/upload-artifact@v4
+    # 今回の結果をキャッシュに保存
+    - name: Save current result to cache
+      uses: actions/cache@v3
       with:
-        name: previous-result
-        path: previous_result/result_name_madori.txt 
+        path: previous_result.txt
+        key: previous-result
 
+    
+    
