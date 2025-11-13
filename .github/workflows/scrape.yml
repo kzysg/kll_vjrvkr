@@ -8,7 +8,7 @@ on:
 
 jobs:
   # ----------------------------
-  # ① ジョブ1：キャッシュを読み込んでスクレイピング実行
+  # ① ジョブ1：スクレイピング＋ファイル生成
   # ----------------------------
   scrape:
     runs-on: ubuntu-latest
@@ -51,19 +51,22 @@ jobs:
           restore-keys: |
             previous-result
 
-      - name: Show cached previous result
-        run: |
-          echo "📂 Cached previous_result.txt:"
-          cat previous_result.txt || echo "⚠️ previous_result.txt not found"
-
       - name: Run scraper
         id: scraper
         run: |
           python main_scrape4.py
-          echo "changed=true" >> $GITHUB_OUTPUT  # 差分通知が必要なときのみフラグ出力
+          echo "changed=true" >> $GITHUB_OUTPUT
+
+      # ✅ 次のジョブへ渡すためファイルをアップロード
+      - name: Upload previous_result.txt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: previous_result
+          path: previous_result.txt
 
   # ----------------------------
-  # ② ジョブ2：キャッシュを上書き更新（常に最新保存）
+  # ② ジョブ2：キャッシュを上書き更新
   # ----------------------------
   update-cache:
     runs-on: ubuntu-latest
@@ -72,7 +75,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Upload new previous_result.txt to cache
+      # ✅ 前のジョブからファイルをダウンロード
+      - name: Download previous_result.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: previous_result
+
+      - name: Verify file exists
+        run: |
+          echo "📄 File list:"
+          ls -l
+          cat previous_result.txt || echo "⚠️ previous_result.txt not found"
+
+      # ✅ キャッシュを上書き保存
+      - name: Save updated cache
         uses: actions/cache/save@v4
         with:
           path: previous_result.txt
