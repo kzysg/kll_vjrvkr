@@ -45,14 +45,26 @@ jobs:
       - name: Set Discord Webhook
         run: echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> $GITHUB_ENV
 
-      - name: Restore previous cache
-        id: restore
-        uses: actions/cache/restore@v4
+      - name: Restore previous result cache
+        id: restore-cache
+        uses: actions/cache@v4
         with:
           path: previous_result.txt
           key: previous-result
           restore-keys: |
             previous-result-
+
+      - name: Show cached previous result
+        run: |
+          if [ -f previous_result.txt ]; then
+            echo "📂 previous_result.txt がキャッシュから復元されました:"
+            cat previous_result.txt
+          else
+            echo "⚠️ previous_result.txt は存在しません"
+          fi
+
+      - name: Cache hit info
+        run: echo "Cache hit? ${{ steps.restore-cache.outputs.cache-hit }}"
 
       - name: Run scraper
         run: python main_scrape4.py
