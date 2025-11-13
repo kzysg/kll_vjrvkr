@@ -88,22 +88,22 @@ if len(driver.window_handles) > 1:
     time.sleep(3)
 
 # 検索条件入力
-try:
-    driver.find_element(By.CSS_SELECTOR, 'input[value="12"][type="checkbox"]').click()
-    driver.find_element(By.CSS_SELECTOR, 'input[value="11"][type="checkbox"]').click()
-    print("✅ 世田谷区・大田区を選択")
-except Exception as e:
-    print("❌ チェックボックスエラー:", e)
+#try:
+#    driver.find_element(By.CSS_SELECTOR, 'input[value="12"][type="checkbox"]').click()
+#    driver.find_element(By.CSS_SELECTOR, 'input[value="11"][type="checkbox"]').click()
+#    print("✅ 世田谷区・大田区を選択")
+#except Exception as e:
+#    print("❌ チェックボックスエラー:", e)
 
 # 検索実行
-try:
-    search_button = driver.find_element(By.XPATH, "//img[@alt='検索する']/parent::a")
-    search_button.click()
-    print("✅ 検索ボタンクリック")
-    time.sleep(WAIT_TIME)
-except Exception as e:
-    print("❌ 検索ボタンクリック失敗:", e)
-
+#try:
+#    search_button = driver.find_element(By.XPATH, "//img[@alt='検索する']/parent::a")
+#    search_button.click()
+#    print("✅ 検索ボタンクリック")
+#    time.sleep(WAIT_TIME)
+#except Exception as e:
+#    print("❌ 検索ボタンクリック失敗:", e)
+#
 html = driver.page_source
 driver.quit()
 
