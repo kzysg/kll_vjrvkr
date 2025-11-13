@@ -47,13 +47,14 @@ jobs:
     - name: Set Discord Webhook
       run: echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> $GITHUB_ENV
 
-    # キャッシュ前回結果を取得
-    - name: Restore previous result
-      uses: actions/cache@v3
-      id: cache-prev
+      # --- キャッシュ復元 ---
+    - name: Restore previous result cache
+      uses: actions/cache@v4
       with:
         path: previous_result.txt
-        key: previous-result
+        key: previous-result-${{ github.run_id }}
+        restore-keys: |
+          previous-result-
         
     - name: Show cached previous result
       if: steps.cache-prev.outputs.cache-hit == 'true'
@@ -65,12 +66,12 @@ jobs:
     - name: Run scraper
       run: python main_scrape4.py
       
-    # 今回の結果をキャッシュに保存
-    - name: Save current result to cache
-      uses: actions/cache@v3
+# --- キャッシュ保存（常に最新に更新）---
+    - name: Save previous result cache
+      uses: actions/cache@v4
       with:
         path: previous_result.txt
-        key: previous-result
+        key: previous-result-${{ github.run_id }}
 
     
     
