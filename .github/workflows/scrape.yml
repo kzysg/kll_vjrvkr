@@ -1,7 +1,4 @@
-name: JKK Scraper (cache-safe)
-concurrency:
-  group: jkk-scraper
-  cancel-in-progress: true
+name: JKK Scraper
 
 on:
   workflow_dispatch:
@@ -45,47 +42,5 @@ jobs:
       - name: Set Discord Webhook
         run: echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> $GITHUB_ENV
 
-      - name: Restore previous result cache
-        id: restore-cache
-        uses: actions/cache@v4
-        with:
-          path: previous_result.txt
-          key: previous-result
-          restore-keys: |
-            previous-result-
-
-      - name: Show cached previous result
-        run: |
-          if [ -f previous_result.txt ]; then
-            echo "📂 previous_result.txt がキャッシュから復元されました:"
-            cat previous_result.txt
-          else
-            echo "⚠️ previous_result.txt は存在しません"
-          fi
-
-      - name: Cache hit info
-        run: echo "Cache hit? ${{ steps.restore-cache.outputs.cache-hit }}"
-
       - name: Run scraper
         run: python main_scrape4.py
-
-      - name: Upload file to artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: previous_result
-          path: previous_result.txt
-
-  update-cache:
-    runs-on: ubuntu-latest
-    needs: scrape
-    steps:
-      - name: Download file from artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: previous_result
-
-      - name: Save updated cache
-        uses: actions/cache/save@v4
-        with:
-          path: previous_result.txt
-          key: previous-result-${{ github.run_id }}
