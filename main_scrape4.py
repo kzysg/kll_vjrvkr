@@ -54,20 +54,20 @@ print("📄 ページのHTMLを page_source.html に保存しました")
 # -----------------------------------------------------
 # 「世田谷区」と「大田区」にチェックを入れる
 # -----------------------------------------------------
-#try:
-#    # 世田谷区 (value="12")
-#    checkbox_setagaya = driver.find_element(By.CSS_SELECTOR, 'input[value="12"][type="checkbox"]')
-#    checkbox_setagaya.click()
-#    print("✅ 世田谷区にチェックを入れました")
-#    time.sleep(0.5)
+try:
+    # 世田谷区 (value="12")
+    checkbox_setagaya = driver.find_element(By.CSS_SELECTOR, 'input[value="12"][type="checkbox"]')
+    checkbox_setagaya.click()
+    print("✅ 世田谷区にチェックを入れました")
+    time.sleep(0.5)
 
     # 大田区 (value="11")
-#    checkbox_ota = driver.find_element(By.CSS_SELECTOR, 'input[value="11"][type="checkbox"]')
-#    checkbox_ota.click()
-#    print("✅ 大田区にチェックを入れました")
-#    time.sleep(1)
-#except Exception as e:
-#    print("❌ チェックボックス操作エラー:", e)
+    checkbox_ota = driver.find_element(By.CSS_SELECTOR, 'input[value="11"][type="checkbox"]')
+    checkbox_ota.click()
+    print("✅ 大田区にチェックを入れました")
+    time.sleep(1)
+except Exception as e:
+    print("❌ チェックボックス操作エラー:", e)
 
 
 # -----------------------------------------------------
