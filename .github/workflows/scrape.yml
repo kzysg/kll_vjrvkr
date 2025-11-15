@@ -51,4 +51,4 @@ jobs:
           echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
 
       - name: Run scraper
-        run: python main_scrape6.py
+        run: python main_scrape1.py
