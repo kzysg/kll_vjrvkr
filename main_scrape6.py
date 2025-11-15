@@ -105,6 +105,8 @@ with open(RESULT_FILE, "w", encoding="utf-8") as f:
     for r in results:
         f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
 
+print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
+
 # Discord通知
 def send_discord_message(content: str):
     if not DISCORD_WEBHOOK_URL:
@@ -135,8 +137,13 @@ prev_main = read_file_normalized(LATEST_FILE)
 
 if prev_main == []:
     send_discord_message(read_full(RESULT_FILE)[:1900])
+    print("📁 latest_result.txt が存在しません。初回通知を行います。")
 elif curr_main != prev_main:
     send_discord_message(read_full(RESULT_FILE)[:1900])
+    print("🔔 差分あり。Discordに通知します。")
+else:
+    print("✅ 内容に変更なし。Discord通知は行いません。")
+
 
 # latest_result.txt 上書き
 with open(RESULT_FILE, "r", encoding="utf-8") as src, open(LATEST_FILE, "w", encoding="utf-8") as dst:
@@ -150,5 +157,12 @@ try:
     subprocess.run(["git", "commit", "-m", f"Update {LATEST_FILE} ({now})"], check=True)
     push_url = f"https://x-access-token:{GITHUB_TOKEN}@github.com/{GITHUB_REPOSITORY}.git"
     subprocess.run(["git", "push", push_url, "HEAD:main"], check=True)
+    print(f"✅ {LATEST_FILE} を GitHub にコミット & pushしました")
 except subprocess.CalledProcessError:
     pass
+
+# -----------------------------------------------------
+# 出力
+# -----------------------------------------------------
+now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+print(f"🏠 実行時刻: {now}")
