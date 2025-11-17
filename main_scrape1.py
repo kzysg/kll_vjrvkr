@@ -73,21 +73,59 @@ driver.quit()
 soup = BeautifulSoup(html, "html.parser")
 
 # 結果取得
+#results = []
+#rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
+#for row in rows:
+#    cols = [td.get_text(strip=True) for td in row.find_all("td")]
+#    if len(cols) >= 10:
+#        name, city, madori, yachin = cols[1], cols[2], cols[5], cols[7]
+#    else:
+#        continue
+#    # 募集番号など
+#    a_tag = row.find("a", href=re.compile(r"senPage"))
+#    if a_tag and "onclick" in a_tag.attrs:
+#        m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", a_tag["onclick"])
+#        boshuNo, jyutakuCd, yusenKbn = m.groups() if m else ("", "", "")
+#    else:
+#        boshuNo = jyutakuCd = yusenKbn = ""
+#    results.append({
+#        "住宅名": name,
+#        "市区町村": city,
+#        "間取り": madori,
+#        "家賃": yachin,
+#        "募集番号": boshuNo,
+#        "住宅コード": jyutakuCd,
+#        "優先区分": yusenKbn
+#    })
+
+# -----------------------------------------------------
+# 検索結果の取得（改良版：1件/複数件どちらにも対応）
+# -----------------------------------------------------
+
 results = []
+
+# 「ListTXT1」または「ListTXT2」クラスを持つ <tr> をすべて取得
 rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
+
 for row in rows:
     cols = [td.get_text(strip=True) for td in row.find_all("td")]
     if len(cols) >= 10:
-        name, city, madori, yachin = cols[1], cols[2], cols[5], cols[7]
-    else:
-        continue
-    # 募集番号など
+        name = cols[1]        # 住宅名
+        city = cols[2]        # 市区町村
+        madori = cols[5]      # 間取り
+        yachin = cols[7]      # 家賃
+
+    # onclick="senPage('','BOSHU123','456','1')" の情報を取得
     a_tag = row.find("a", href=re.compile(r"senPage"))
     if a_tag and "onclick" in a_tag.attrs:
-        m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", a_tag["onclick"])
-        boshuNo, jyutakuCd, yusenKbn = m.groups() if m else ("", "", "")
+        m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", str(a_tag["onclick"]))
+        if m:
+            boshuNo, jyutakuCd, yusenKbn = m.groups()
+        else:
+            boshuNo = jyutakuCd = yusenKbn = ""
     else:
         boshuNo = jyutakuCd = yusenKbn = ""
+
     results.append({
         "住宅名": name,
         "市区町村": city,
@@ -97,6 +135,7 @@ for row in rows:
         "住宅コード": jyutakuCd,
         "優先区分": yusenKbn
     })
+
 
 # result_name_madori.txt 保存
 now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
