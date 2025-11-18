@@ -57,6 +57,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: page_source
-          path: page_source.html
-                page_text.txt
-
+          path: |
+            page_source.html
+            page_text.txt
