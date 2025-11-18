@@ -52,3 +52,10 @@ jobs:
 
       - name: Run scraper
         run: python main_scrape1.py
+
+      - name: Upload page_source
+        uses: actions/upload-artifact@v3
+        with:
+          name: page_source
+          path: page_source.html
+
