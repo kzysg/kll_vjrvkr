@@ -58,4 +58,5 @@ jobs:
         with:
           name: page_source
           path: page_source.html
+                page_text.txt
 
