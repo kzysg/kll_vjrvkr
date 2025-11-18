@@ -71,6 +71,10 @@ except:
 html = driver.page_source
 driver.quit()
 soup = BeautifulSoup(html, "html.parser")
+with open("page_source.html", "w", encoding="utf-8") as f:
+    f.write(html)
+
+
 
 # 結果取得
 #results = []
