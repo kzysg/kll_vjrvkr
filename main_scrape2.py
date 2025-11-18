@@ -51,13 +51,13 @@ if len(driver.window_handles) > 1:
     time.sleep(3)
 
 # チェックボックス操作（世田谷区・大田区・板橋区）
-#for value in ["12", "11", "19"]:
-#    try:
-#        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
-#        checkbox.click()
-#        time.sleep(0.5)
-#    except:
-#        pass
+for value in ["12", "11", "19"]:
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
+        checkbox.click()
+        time.sleep(0.5)
+    except:
+        pass
 
 # 検索ボタンクリック
 try:
@@ -74,75 +74,35 @@ soup = BeautifulSoup(html, "html.parser")
 with open("page_source.html", "w", encoding="utf-8") as f:
     f.write(html)
 
+# -----------------------------------------------------
+# 1件でも複数件でも同じ ListTXT1/2 の tr を抽出
+# -----------------------------------------------------
 results = []
 
-# -----------------------------------------------------
-# まず複数件ページを探す（ListTXT1/2 の tr が存在するとき）
-# -----------------------------------------------------
-rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
+rows = soup.select("tr.ListTXT1, tr.ListTXT2")
 
-if rows:  # ← 複数件ページ
-    for row in rows:
-        cols = [td.get_text(strip=True) for td in row.find_all("td")]
-        if len(cols) >= 10:
-            name = cols[1]
-            city = cols[2]
-            madori = cols[5]
-            yachin = cols[7]
-        else:
-            continue
+for row in rows:
+    tds = row.find_all("td")
+    if len(tds) < 10:
+        continue
 
-        # onclick="senPage('','BOSHU123','456','1')"
-        a_tag = row.find("a", href=re.compile(r"senPage"))
-        boshuNo = jyutakuCd = yusenKbn = ""
+    # 各フィールド抽出
+    name = tds[1].get_text(strip=True)
+    city = tds[2].get_text(strip=True)
+    madori = tds[5].get_text(strip=True)
+    yachin = tds[7].get_text(strip=True)
 
-        if a_tag and "onclick" in a_tag.attrs:
-            m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", a_tag["onclick"])
-            if m:
-                boshuNo, jyutakuCd, yusenKbn = m.groups()
-
-        results.append({
-            "住宅名": name,
-            "市区町村": city,
-            "間取り": madori,
-            "家賃": yachin,
-            "募集番号": boshuNo,
-            "住宅コード": jyutakuCd,
-            "優先区分": yusenKbn
-        })
-
-
-# -----------------------------------------------------
-# 1件ページ（詳細ページ）の場合はこちら
-# -----------------------------------------------------
-else:
-    # 住宅名
-    name_tag = soup.find("div", class_="housename cls")
-    name = name_tag.get_text(strip=True) if name_tag else ""
-
-    # 市区町村（例：獨協大学前〈草加松原〉 など → 取れない場合もある）
-    # 1件ページには市区町村が無い可能性が高いので空欄にする
-    city = ""
-
-    # 間取り（例：1DK, 2LDK）
-    madori = ""
-    kodawari = soup.find("div", class_="housing-list")
-    if kodawari:
-        # <li>に「1DK」「2LDK」などが入っている
-        for li in kodawari.find_all("li"):
-            text = li.get_text(strip=True)
-            if re.search(r"\d[DLK]+", text):
-                madori = text
-                break
-
-    # 家賃（例：62,300円）
-    yachin = ""
-    rent_tag = soup.find(text=re.compile(r"円"))
-    if rent_tag:
-        yachin = rent_tag.strip()
-
-    # 募集番号など
+    # onclick="senPage('','L1844','1980320','0002');"
+    a_tag = tds[-1].find("a")
     boshuNo = jyutakuCd = yusenKbn = ""
+
+    if a_tag and a_tag.has_attr("onclick"):
+        m = re.findall(r"'(.*?)'", a_tag["onclick"])
+        # ['', '募集番号', '住宅コード', '優先区分']
+        if len(m) >= 4:
+            boshuNo = m[1]
+            jyutakuCd = m[2]
+            yusenKbn = m[3]
 
     results.append({
         "住宅名": name,
@@ -155,8 +115,12 @@ else:
     })
 
 
+# -----------------------------------------------------
+# 0件の場合は results = []
+# -----------------------------------------------------
+
 # result_name_madori.txt 保存
-now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
+now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
 with open(RESULT_FILE, "w", encoding="utf-8") as f:
     f.write(f"取得日時: {now}\n")
     f.write(f"空き住戸数: {len(results)}件\n\n")
@@ -166,6 +130,7 @@ with open(RESULT_FILE, "w", encoding="utf-8") as f:
         f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
 
 print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
+
 
 # Discord通知
 def send_discord_message(content: str):
@@ -177,6 +142,7 @@ def send_discord_message(content: str):
     except:
         pass
 
+
 # ファイル読み込み正規化
 def read_file_normalized(path):
     if not os.path.exists(path):
@@ -185,11 +151,13 @@ def read_file_normalized(path):
         lines = f.read().splitlines()
     return [re.sub(r"\s+", " ", ln.replace("\u3000", " ").strip()) for ln in lines[3:]]
 
+
 def read_full(path):
     if not os.path.exists(path):
         return ""
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
+
 
 # 差分チェック
 curr_main = read_file_normalized(RESULT_FILE)
@@ -209,6 +177,7 @@ else:
 with open(RESULT_FILE, "r", encoding="utf-8") as src, open(LATEST_FILE, "w", encoding="utf-8") as dst:
     dst.write(src.read())
 
+
 # Git commit & push（自動トークン対応）
 try:
     subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
@@ -221,8 +190,9 @@ try:
 except subprocess.CalledProcessError:
     pass
 
+
 # -----------------------------------------------------
 # 出力
 # -----------------------------------------------------
-now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
+now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
 print(f"🏠 実行時刻: {now}")
