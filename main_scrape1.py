@@ -75,11 +75,18 @@ with open("page_source.html", "w", encoding="utf-8") as f:
     f.write(html)
 
 # HTMLからテキスト抽出
-text = soup.get_text(separator="\n")
+lines = []
+for tr in soup.find_all("tr"):
+    cols = [td.get_text(strip=True) for td in tr.find_all("td")]  # trタグを順に処理
+    if cols:
+        line = "｜".join(cols)  # 列の間に｜を入れて1行に
+        lines.append(line)
+lines = [line for line in lines if line.strip()]  # 空白行や余分なスペースを削除
+
+# 保存
 text_path = "page_text.txt"
 with open(text_path, "w", encoding="utf-8") as f:
-    f.write(text)
-
+    f.write("\n".join(lines))
 print(f"💾 {text_path} にテキストを保存しました")
 
 
