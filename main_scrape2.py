@@ -1,33 +1,30 @@
 import time
-import datetime
-import re
 import os
+import re
 import requests
-import difflib
 import subprocess
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-from datetime import datetime
-from zoneinfo import ZoneInfo  # Python 3.9+
-
-
-# ファイル名
-RESULT_FILE = "result_name_madori.txt"
-LATEST_FILE = "latest_result.txt"
-
-# 環境変数
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")  # 自動トークン
-GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")  # user/repo
 
 # -----------------------------------------------------
-# スクレイピング設定
+# 設定
 # -----------------------------------------------------
 URL = "https://jhomes.to-kousya.or.jp/search/jkknet/service/akiyaJyoukenStartInit"
 WAIT_TIME = 10
+RESULT_FILE = "result_name_madori.txt"
+LATEST_FILE = "latest_result.txt"
 
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")  # user/repo
+
+# -----------------------------------------------------
+# Seleniumでページ取得
+# -----------------------------------------------------
 options = Options()
 options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
@@ -38,7 +35,7 @@ driver = webdriver.Chrome(options=options)
 driver.get(URL)
 time.sleep(3)
 
-# ページ遷移
+# 次ページリンククリック（あれば）
 try:
     next_link = driver.find_element(By.XPATH, "//a[contains(@onclick, 'submitNext')]")
     next_link.click()
@@ -50,15 +47,6 @@ if len(driver.window_handles) > 1:
     driver.switch_to.window(driver.window_handles[-1])
     time.sleep(3)
 
-# チェックボックス操作（世田谷区・大田区・板橋区）
-for value in ["12", "11", "19"]:
-    try:
-        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
-        checkbox.click()
-        time.sleep(0.5)
-    except:
-        pass
-
 # 検索ボタンクリック
 try:
     search_button = driver.find_element(By.XPATH, "//img[@alt='検索する']/parent::a")
@@ -67,59 +55,51 @@ try:
 except:
     pass
 
-# HTML取得
 html = driver.page_source
 driver.quit()
 soup = BeautifulSoup(html, "html.parser")
-with open("page_source.html", "w", encoding="utf-8") as f:
-    f.write(html)
 
 # -----------------------------------------------------
-# 1件でも複数件でも同じ ListTXT1/2 の tr を抽出
+# データ抽出
 # -----------------------------------------------------
 results = []
 
+# 住宅名（1件ページも含む）
+name_tag = soup.find("div", class_="housename cls")
+name_main = name_tag.get_text(strip=True) if name_tag else ""
+
+# tr.ListTXT1 / ListTXT2 を対象にする
 rows = soup.select("tr.ListTXT1, tr.ListTXT2")
 
 for row in rows:
     tds = row.find_all("td")
-    if len(tds) < 10:
+    if len(tds) < 7:
         continue
 
-    # 各フィールド抽出
-    name = tds[1].get_text(strip=True)
-    city = tds[2].get_text(strip=True)
-    madori = tds[5].get_text(strip=True)
-    yachin = tds[7].get_text(strip=True)
+    # 間取り
+    madori = tds[4].get_text(strip=True)
 
-    # onclick="senPage('','L1844','1980320','0002');"
-    a_tag = tds[-1].find("a")
-    boshuNo = jyutakuCd = yusenKbn = ""
+    # 家賃
+    yachin = tds[6].get_text(strip=True)
 
-    if a_tag and a_tag.has_attr("onclick"):
-        m = re.findall(r"'(.*?)'", a_tag["onclick"])
-        # ['', '募集番号', '住宅コード', '優先区分']
-        if len(m) >= 4:
-            boshuNo = m[1]
-            jyutakuCd = m[2]
-            yusenKbn = m[3]
+    # 住所から市区町村を抽出
+    address_td = row.find_next("td", rowspan=True)
+    city = ""
+    if address_td:
+        m = re.search(r"(.+?区)", address_td.get_text(strip=True))
+        if m:
+            city = m.group(1)
 
     results.append({
-        "住宅名": name,
+        "住宅名": name_main,
         "市区町村": city,
         "間取り": madori,
-        "家賃": yachin,
-        "募集番号": boshuNo,
-        "住宅コード": jyutakuCd,
-        "優先区分": yusenKbn
+        "家賃": yachin
     })
 
-
 # -----------------------------------------------------
-# 0件の場合は results = []
+# 保存
 # -----------------------------------------------------
-
-# result_name_madori.txt 保存
 now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
 with open(RESULT_FILE, "w", encoding="utf-8") as f:
     f.write(f"取得日時: {now}\n")
@@ -129,10 +109,11 @@ with open(RESULT_FILE, "w", encoding="utf-8") as f:
     for r in results:
         f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
 
-print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
+print(f"💾 {RESULT_FILE} に {len(results)} 件保存しました。")
 
-
+# -----------------------------------------------------
 # Discord通知
+# -----------------------------------------------------
 def send_discord_message(content: str):
     if not DISCORD_WEBHOOK_URL:
         return
@@ -142,8 +123,6 @@ def send_discord_message(content: str):
     except:
         pass
 
-
-# ファイル読み込み正規化
 def read_file_normalized(path):
     if not os.path.exists(path):
         return []
@@ -151,13 +130,11 @@ def read_file_normalized(path):
         lines = f.read().splitlines()
     return [re.sub(r"\s+", " ", ln.replace("\u3000", " ").strip()) for ln in lines[3:]]
 
-
 def read_full(path):
     if not os.path.exists(path):
         return ""
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
-
 
 # 差分チェック
 curr_main = read_file_normalized(RESULT_FILE)
@@ -172,13 +149,13 @@ elif curr_main != prev_main:
 else:
     print("✅ 内容に変更なし。Discord通知は行いません。")
 
-
-# latest_result.txt 上書き
+# 最新ファイル上書き
 with open(RESULT_FILE, "r", encoding="utf-8") as src, open(LATEST_FILE, "w", encoding="utf-8") as dst:
     dst.write(src.read())
 
-
-# Git commit & push（自動トークン対応）
+# -----------------------------------------------------
+# Git commit & push
+# -----------------------------------------------------
 try:
     subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
     subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
@@ -190,9 +167,4 @@ try:
 except subprocess.CalledProcessError:
     pass
 
-
-# -----------------------------------------------------
-# 出力
-# -----------------------------------------------------
-now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
 print(f"🏠 実行時刻: {now}")
