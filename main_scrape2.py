@@ -47,6 +47,16 @@ if len(driver.window_handles) > 1:
     driver.switch_to.window(driver.window_handles[-1])
     time.sleep(3)
 
+# チェックボックス操作（世田谷区・大田区・板橋区）
+for value in ["12", "11", "19"]:
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
+        checkbox.click()
+        time.sleep(0.5)
+    except:
+        pass
+
+
 # 検索ボタンクリック
 try:
     search_button = driver.find_element(By.XPATH, "//img[@alt='検索する']/parent::a")
