@@ -74,6 +74,13 @@ soup = BeautifulSoup(html, "html.parser")
 with open("page_source.html", "w", encoding="utf-8") as f:
     f.write(html)
 
+# HTMLからテキスト抽出
+text = soup.get_text(separator="\n")
+text_path = "page_text.txt"
+with open(text_path, "w", encoding="utf-8") as f:
+    f.write(text)
+
+print(f"💾 {text_path} にテキストを保存しました")
 
 
 # 結果取得
@@ -206,6 +213,8 @@ try:
     print(f"✅ {LATEST_FILE} を GitHub にコミット & pushしました")
 except subprocess.CalledProcessError:
     pass
+
+
 
 # -----------------------------------------------------
 # 出力
