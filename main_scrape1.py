@@ -58,6 +58,14 @@ if len(driver.window_handles) > 1:
 #        time.sleep(0.5)
 #    except:
 #        pass
+# チェックボックス操作（板橋区）
+for value in ["19"]:
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
+        checkbox.click()
+        time.sleep(0.5)
+    except:
+        pass
 
 # 検索ボタンクリック
 try:
