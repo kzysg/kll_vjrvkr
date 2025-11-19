@@ -154,6 +154,11 @@ for row in rows:
         "優先区分": yusenKbn
     })
 
+# rows.txt に保存
+with open("rows.txt", "w", encoding="utf-8") as f:
+    for row in rows:
+        f.write(str(row) + "\n")  # row は Tag オブジェクトなので文字列化
+
 
 # result_name_madori.txt 保存
 now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
