@@ -60,3 +60,4 @@ jobs:
           path: |
             page_source.html
             page_text.txt
+            rows.txt
