@@ -117,8 +117,8 @@ if "住戸情報の確認" in text:
     # 家賃（例：110,500）
     m_yachin = re.search(r"家賃.*?([0-9,]{5,})", text)
     yachin = m_yachin.group(1) if m_yachin else ""
-
-     results.append({
+    
+    results.append({
         "住宅名": name,
         "市区町村": city,
         "間取り": madori,
