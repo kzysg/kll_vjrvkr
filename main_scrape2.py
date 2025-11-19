@@ -116,7 +116,7 @@ if "住戸情報の確認" in text:
     madori = m_madori.group(0).strip() if m_madori else ""
     
     # 家賃（例：110,500）
-    m_yachin = re.search(r"家賃.*?([0-9,]{5,})", text)
+    m_yachin = re.search(r"家賃.*?([0-9,]{5,})([^｜|]+)", text)
     yachin = m_yachin.group(1) if m_yachin else ""
     
     results.append({
