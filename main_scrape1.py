@@ -51,13 +51,13 @@ if len(driver.window_handles) > 1:
     time.sleep(3)
 
 #チェックボックス操作（世田谷区・大田区・板橋区）
-#for value in ["12", "11", "19"]:
-#    try:
-#        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
-#        checkbox.click()
-#        time.sleep(0.5)
-#    except:
-#        pass
+for value in ["12", "11", "19"]:
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, f'input[value="{value}"][type="checkbox"]')
+        checkbox.click()
+        time.sleep(0.5)
+    except:
+        pass
 
 # 検索ボタンクリック
 try:
@@ -88,6 +88,7 @@ text_path = "page_text.txt"
 with open(text_path, "w", encoding="utf-8") as f:
     f.write("\n".join(lines))
 print(f"💾 {text_path} にテキストを保存しました")
+
 
 
 # 結果取得
