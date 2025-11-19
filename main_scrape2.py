@@ -118,18 +118,15 @@ if "住戸情報の確認" in text:
     m_yachin = re.search(r"家賃.*?([0-9,]{5,})", text)
     yachin = m_yachin.group(1) if m_yachin else ""
 
-    # result_name_madori.txt 保存
-    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
-    with open(RESULT_FILE, "w", encoding="utf-8") as f:
-        f.write(f"取得日時: {now}\n")
-        f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
-        f.write("-" * 35 + "\n")
-        f.write(f"{name} | {city} | {madori} | {yachin}\n")
-
-    print(f"💾 result_name_madori.txt に1件保存しました。")
+     results.append({
+        "住宅名": name,
+        "市区町村": city,
+        "間取り": madori,
+        "家賃": yachin
+    })
 
 #0or2件以上のとき
-else
+else:
     print("0または2件以上のデータ抽出コードを実行します")
     # 「ListTXT1」または「ListTXT2」クラスを持つ <tr> をすべて取得
     rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
@@ -163,21 +160,17 @@ else
             "優先区分": yusenKbn
         })
 
-    # rows.txt に保存
-    with open("rows.txt", "w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(str(row) + "\n")  # row は Tag オブジェクトなので文字列化
 
-    # result_name_madori.txt 保存
-    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
-    with open(RESULT_FILE, "w", encoding="utf-8") as f:
-        f.write(f"取得日時: {now}\n")
-        f.write(f"空き住戸数: {len(results)}件\n\n")
-        f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
-        f.write("-" * 35 + "\n")
-        for r in results:
-            f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
-    print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
+# result_name_madori.txt 保存
+now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
+with open(RESULT_FILE, "w", encoding="utf-8") as f:
+    f.write(f"取得日時: {now}\n")
+    f.write(f"空き住戸数: {len(results)}件\n\n")
+    f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
+    f.write("-" * 35 + "\n")
+    for r in results:
+        f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
+print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
 
 
 # Discord通知
