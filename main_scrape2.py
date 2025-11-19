@@ -89,89 +89,96 @@ with open(text_path, "w", encoding="utf-8") as f:
     f.write("\n".join(lines))
 print(f"💾 {text_path} にテキストを保存しました")
 
-
-
-# 結果取得
-#results = []
-#rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
-#for row in rows:
-#    cols = [td.get_text(strip=True) for td in row.find_all("td")]
-#    if len(cols) >= 10:
-#        name, city, madori, yachin = cols[1], cols[2], cols[5], cols[7]
-#    else:
-#        continue
-#    # 募集番号など
-#    a_tag = row.find("a", href=re.compile(r"senPage"))
-#    if a_tag and "onclick" in a_tag.attrs:
-#        m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", a_tag["onclick"])
-#        boshuNo, jyutakuCd, yusenKbn = m.groups() if m else ("", "", "")
-#    else:
-#        boshuNo = jyutakuCd = yusenKbn = ""
-#    results.append({
-#        "住宅名": name,
-#        "市区町村": city,
-#        "間取り": madori,
-#        "家賃": yachin,
-#        "募集番号": boshuNo,
-#        "住宅コード": jyutakuCd,
-#        "優先区分": yusenKbn
-#    })
-
-# -----------------------------------------------------
-# 検索結果の取得（改良版：1件/複数件どちらにも対応）
-# -----------------------------------------------------
+#読み込み
+with open(text_path, "r", encoding="utf-8") as f:
+    text = f.read()
 
 results = []
 
-# 「ListTXT1」または「ListTXT2」クラスを持つ <tr> をすべて取得
-rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
+# -----------------------------------------------------
+# 分岐条件(1件、0or2件以上で分岐)
+# -----------------------------------------------------
 
-for row in rows:
-    cols = [td.get_text(strip=True) for td in row.find_all("td")]
-    if len(cols) >= 10:
-        name = cols[1]        # 住宅名
-        city = cols[2]        # 市区町村
-        madori = cols[5]      # 間取り
-        yachin = cols[7]      # 家賃
+#1件のとき
+if "住戸情報の確認" in text:
+    print("1件のデータ抽出コードを実行します")
+    # 住宅名：「住宅名｜コーシャハイム坂下」などのパターン
+    m_name = re.search(r"住宅名[｜|]\s*([^\n|]+)", text)
+    name = m_name.group(1).strip() if m_name else ""
+    
+    # 市区町村：住所から抽出（例：板橋区坂下３－１０－Ｇ）
+    m_city = re.search(r"(千代田区|中央区|港区|新宿区|文京区|台東区|墨田区|江東区|品川区|目黒区|大田区|世田谷区|渋谷区|中野区|杉並区|豊島区|北区|荒川区|板橋区|練馬区|足立区|葛飾区|江戸川区)", text)
+    city = m_city.group(0) if m_city else ""
+    
+    # 間取り（例：２ＬＤＫ、1LDK などを抽出）
+    m_madori = re.search(r"[0-9１-９]?\.?\s*[LＬ][DKＤＫ][KＫ]?", text)
+    madori = m_madori.group(0).strip() if m_madori else ""
+    
+    # 家賃（例：110,500）
+    m_yachin = re.search(r"家賃.*?([0-9,]{5,})", text)
+    yachin = m_yachin.group(1) if m_yachin else ""
 
-    # onclick="senPage('','BOSHU123','456','1')" の情報を取得
-    a_tag = row.find("a", href=re.compile(r"senPage"))
-    if a_tag and "onclick" in a_tag.attrs:
-        m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", str(a_tag["onclick"]))
-        if m:
-            boshuNo, jyutakuCd, yusenKbn = m.groups()
+    # result_name_madori.txt 保存
+    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
+    with open(RESULT_FILE, "w", encoding="utf-8") as f:
+        f.write(f"取得日時: {now}\n")
+        f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
+        f.write("-" * 35 + "\n")
+        f.write(f"{name} | {city} | {madori} | {yachin}\n")
+
+    print(f"💾 result_name_madori.txt に1件保存しました。")
+
+#0or2件以上のとき
+else
+    print("0または2件以上のデータ抽出コードを実行します")
+    # 「ListTXT1」または「ListTXT2」クラスを持つ <tr> をすべて取得
+    rows = soup.find_all("tr", class_=re.compile(r"ListTXT[12]"))
+
+    for row in rows:
+        cols = [td.get_text(strip=True) for td in row.find_all("td")]
+        if len(cols) >= 10:
+            name = cols[1]        # 住宅名
+            city = cols[2]        # 市区町村
+            madori = cols[5]      # 間取り
+            yachin = cols[7]      # 家賃
+
+        # onclick="senPage('','BOSHU123','456','1')" の情報を取得
+        a_tag = row.find("a", href=re.compile(r"senPage"))
+        if a_tag and "onclick" in a_tag.attrs:
+            m = re.search(r"senPage\('','([A-Z0-9]+)','(\d+)','(\d+)'\)", str(a_tag["onclick"]))
+            if m:
+                boshuNo, jyutakuCd, yusenKbn = m.groups()
+            else:
+                boshuNo = jyutakuCd = yusenKbn = ""
         else:
             boshuNo = jyutakuCd = yusenKbn = ""
-    else:
-        boshuNo = jyutakuCd = yusenKbn = ""
 
-    results.append({
-        "住宅名": name,
-        "市区町村": city,
-        "間取り": madori,
-        "家賃": yachin,
-        "募集番号": boshuNo,
-        "住宅コード": jyutakuCd,
-        "優先区分": yusenKbn
-    })
+        results.append({
+            "住宅名": name,
+            "市区町村": city,
+            "間取り": madori,
+            "家賃": yachin,
+            "募集番号": boshuNo,
+            "住宅コード": jyutakuCd,
+            "優先区分": yusenKbn
+        })
 
-# rows.txt に保存
-with open("rows.txt", "w", encoding="utf-8") as f:
-    for row in rows:
-        f.write(str(row) + "\n")  # row は Tag オブジェクトなので文字列化
+    # rows.txt に保存
+    with open("rows.txt", "w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(str(row) + "\n")  # row は Tag オブジェクトなので文字列化
 
+    # result_name_madori.txt 保存
+    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
+    with open(RESULT_FILE, "w", encoding="utf-8") as f:
+        f.write(f"取得日時: {now}\n")
+        f.write(f"空き住戸数: {len(results)}件\n\n")
+        f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
+        f.write("-" * 35 + "\n")
+        for r in results:
+            f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
+    print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
 
-# result_name_madori.txt 保存
-now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")  # JSTタイムゾーンを指定
-with open(RESULT_FILE, "w", encoding="utf-8") as f:
-    f.write(f"取得日時: {now}\n")
-    f.write(f"空き住戸数: {len(results)}件\n\n")
-    f.write("住宅名 | 市区町村 | 間取り | 家賃\n")
-    f.write("-" * 35 + "\n")
-    for r in results:
-        f.write(f"{r['住宅名']} | {r['市区町村']} | {r['間取り']} | {r['家賃']}\n")
-
-print(f"💾 result_name_madori.txt に {len(results)} 件保存しました。")
 
 # Discord通知
 def send_discord_message(content: str):
