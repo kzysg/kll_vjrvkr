@@ -103,7 +103,8 @@ results = []
 if "住戸情報の確認" in text:
     print("1件のデータ抽出コードを実行します")
     # 住宅名：「住宅名｜コーシャハイム坂下」などのパターン
-    m_name = re.search(r"住宅名[｜|]\s*([^\n|]+)", text)
+    # m_name = re.search(r"住宅名[｜|]\s*([^\n|]+)", text)
+    m_name = re.search(r"住宅名[｜|]\s*([^\n|]?)", text)
     name = m_name.group(1).strip() if m_name else ""
     
     # 市区町村：住所から抽出（例：板橋区坂下３－１０－Ｇ）
