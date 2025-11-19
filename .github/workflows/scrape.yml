@@ -51,7 +51,7 @@ jobs:
           echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
 
       - name: Run scraper
-        run: python main_scrape1.py
+        run: python main_scrape2.py
 
       - name: Upload page_source
         uses: actions/upload-artifact@v4
